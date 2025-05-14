@@ -12,7 +12,7 @@ LOGLEVEL  = os.environ.get("CF_UPDATER_LOGLEVEL", "INFO")
 INTERVAL        = int(os.environ.get("CF_UPDATER_INTERVAL", 30))
 FORCE_INTERVAL  = os.environ.get("CF_UPDATER_FORCE_INTERVAL", False)
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', encoding='utf-8')
+logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', encoding='utf-8')
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 logging.getLogger().setLevel(LOGLEVEL)
 
