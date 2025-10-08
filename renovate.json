@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "automerge": true,
+      "matchPackageNames": [
+        "docker/setup-qemu-action",
+        "docker/setup-buildx-action",
+        "docker/login-action",
+        "docker/build-push-action"
+      ]
+    }
+  ]
+}
