@@ -26,7 +26,7 @@ docker compose up -d
 ```
 
 ## IPv4 vs IPv6
-To be able to set AAAA-rcords, your container needs to work with IPv6. Configure docker daemon to use IPv6 by adding this to `/etc/docker/daemon.json`
+To be able to set AAAA-records, your container needs to work with IPv6. Configure docker daemon to use IPv6 by adding this to `/etc/docker/daemon.json`
 ```
 {
   "experimental": true,
