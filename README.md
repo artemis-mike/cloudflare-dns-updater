@@ -29,6 +29,7 @@ docker compose up -d
 To be able to set AAAA-rcords, your container needs to work with IPv6. Configure docker daemon to use IPv6 by adding this to `/etc/docker/daemon.json`
 ```
 {
+  "experimental": true,
   "ipv6": true,
   "fixed-cidr-v6": "2001:db8:1::/64",
   "ip6tables": true
