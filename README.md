@@ -1,6 +1,6 @@
 # Cloudflare DNS Updater
 ## Synopsis
-A script that reconciles a Cloudflare DNS A-record against the hosts current public IP address.
+A script that reconciles a Cloudflare DNS A-record or AAAA-record against the hosts current public IP address.
 
 ## Configuration 
 
