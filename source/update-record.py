@@ -3,6 +3,7 @@ from datetime import datetime
 
 ZONE_ID   = os.environ.get("CF_UPDATER_ZONE_ID", None)
 A_RECORD  = os.environ.get("CF_UPDATER_A_RECORD", None)
+AAAA_RECORD = os.environ.get("CF_UPDATER_AAAA_RECORD", None)
 TOKEN     = os.environ.get("CF_UPDATER_TOKEN", None)
 LOGLEVEL  = os.environ.get("CF_UPDATER_LOGLEVEL", "INFO")
 
@@ -26,8 +27,11 @@ def check_settings():
   if (ZONE_ID is None):
     logging.critical("CF_UPDATER_ZONE_ID is not set. This is required. Exiting.")
     error = True
-  if (A_RECORD is None):
-    logging.critical("CF_UPDATER_A_RECORD is not set. This is required. Exiting.")
+  if (A_RECORD is None and AAAA_RECORD is None):
+    logging.critical("One of CF_UPDATER_A_RECORD or CF_UPDATER_AAAA_RECORD is required. Exiting.")
+    error = True
+  if (A_RECORD is not None and AAAA_RECORD is not None):
+    logging.critical("CF_UPDATER_A_RECORD and CF_UPDATER_AAAA_RECORD can't be used at the same time. Exiting.")
     error = True
   if (TOKEN is None):
     logging.critical("CF_UPDATER_TOKEN is not set. This is required. Exiting.")
@@ -41,33 +45,35 @@ def check_settings():
   else:
     return 0
 
-def get_public_ip():
+def get_public_ip_v4():
   response = requests.get("https://ipinfo.io/ip")
-  logging.info("Public IP is: " + response.text)
+  logging.info("Public IPv4 is: " + response.text)
   return response.text
 
+def get_public_ip_v6():
+  response = requests.get("https://v6.ipinfo.io/ip")
+  logging.info("Public IPv6 is: " + response.text)
+  return response.text
 
-def get_zone_data(zone_id, token, A_record):
+def get_zone_data(zone_id, token, record, type):
   url = "https://api.cloudflare.com/client/v4/zones/" + zone_id + "/dns_records"
   headers = {"Authorization": "Bearer " + token}
   response = requests.get(url, headers=headers)
   response_json = response.json()
   for result in response_json["result"]:
-    if (result["name"] == A_record):
-      logging.debug("Found IP for A-Record " + A_record + ": " + result["content"] + ".")
+    if (result["name"] == record and result["type"] == type):
+      logging.debug("Found IP for " + type + "-Record " + record + ": " + result["content"] + ".")
       return [result["id"], result["content"]]
-  logging.error("Can't find IP for A-Record " + A_record +". Are you sure it's set up at Cloudflare?")
+  logging.error("Can't find IP for " + type + "-Record " + record +". Are you sure it's set up at Cloudflare?")
   sys.exit(2) 
 
-      
-
-def update_record(zone_id, token, record_id, record_ip, A_record):
+def update_record(zone_id, token, record_id, record_ip, A_record, type):
   url = "https://api.cloudflare.com/client/v4/zones/" + zone_id + "/dns_records/" + record_id
   headers = {"Authorization": "Bearer " + token, "Content-Type": "application/json"}
   data = {
     "content": record_ip,
     "name": A_record,
-    "type": "A",
+    "type": type,
     "ttl": 60
   }
   logging.info("Updating record %s.", A_record)
@@ -83,6 +89,7 @@ def main():
   logging.info("LOGLEVEL: \t%s", LOGLEVEL)
   logging.debug("ZONE_ID: \t%s", ZONE_ID)
   logging.debug("A_RECORD: \t%s", A_RECORD)
+  logging.debug("AAAA_RECORD: \t%s", AAAA_RECORD)
   logging.debug("INTERVAL: \t%s", INTERVAL)
   logging.debug("FORCE_INTERVAL: %s", FORCE_INTERVAL)
 
@@ -95,13 +102,23 @@ def main():
     f = open("./lastRun.epoch", "w")     # Relevant for health.sh / health-compose.sh
     f.write(str(round(datetime.now().timestamp())))
     f.close()
-    public_ip = get_public_ip()
-    record_id, record_ip = get_zone_data(ZONE_ID, TOKEN, A_RECORD)
+    
+    if A_RECORD:
+      type = "A"
+      public_ip = get_public_ip_v4()
+      record = A_RECORD
+    elif AAAA_RECORD:
+      type = "AAAA"
+      public_ip = get_public_ip_v6()
+      record = AAAA_RECORD
+
+    record_id, record_ip = get_zone_data(ZONE_ID, TOKEN, record, type)
+
     if (record_ip != public_ip):
-      logging.info("Record IP for " + A_RECORD + ": " + record_ip +" does not match public IP of the host: " + public_ip + ".")
-      update_record(ZONE_ID, TOKEN, record_id, public_ip, A_RECORD)
+      logging.info("Record IP for " + record + ": " + record_ip +" does not match public IP of the host: " + public_ip + ".")
+      update_record(ZONE_ID, TOKEN, record_id, public_ip, record, type)
     else:
-      logging.info("DNS record IP for " + A_RECORD + ": " + record_ip +" matches public IP of the host: " + public_ip + ".")
+      logging.info("DNS record IP for " + record + ": " + record_ip +" matches public IP of the host: " + public_ip + ".")
       logging.info("Nothing to do. Sleeping for %ss.", INTERVAL)
       time.sleep(INTERVAL)
 
