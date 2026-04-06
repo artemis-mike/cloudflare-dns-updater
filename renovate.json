@@ -12,7 +12,11 @@
         "docker/setup-qemu-action",
         "docker/setup-buildx-action",
         "docker/login-action",
-        "docker/build-push-action"
+        "docker/build-push-action",
+        "actions/setup-python",
+        "actions/checkout",
+        "pytest",
+        
       ]
     },
     {
@@ -21,8 +25,7 @@
       "matchUpdateTypes": ["minor", "patch"],
       "matchPackageNames": [
         "python",
-        "requests",
-        "chardet"
+        "requests"
       ]
     }
   ]
